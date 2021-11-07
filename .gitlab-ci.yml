@@ -8,6 +8,11 @@ include:
   - template: 'Security/Secret-Detection.gitlab-ci.yml'
   - template: 'Workflows/MergeRequest-Pipelines.gitlab-ci.yml'
 
+container_scanning:
+  variables:
+    GIT_STRATEGY: fetch
+    DOCKERFILE_PATH: ./Dockerfile
+
 build:
   image: docker:latest
   stage: build
@@ -19,16 +24,31 @@ build:
     - docker info
     - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" $CI_REGISTRY
     - docker pull $IMAGE || true
-    - docker pull $CI_REGISTRY_IMAGE/$CI_COMMIT_REF_SLUG || true
-    - docker pull $CI_REGISTRY_IMAGE/main || true
-    - docker pull $CI_REGISTRY_IMAGE || true
+    - docker pull $CI_REGISTRY_IMAGE:latest || true
     - docker build -t $IMAGE .
     - docker push $IMAGE
 
-container_scanning:
-  variables:
-    GIT_STRATEGY: fetch
-    DOCKERFILE_PATH: ./Dockerfile
+push latest:
+  stage: build
+  needs:
+    - build
+  only:
+    - main
+  script:
+    - docker pull $CI_REGISTRY_IMAGE:$CI_COMMIT_SHA
+    - docker tag $CI_REGISTRY_IMAGE:$CI_COMMIT_SHA $CI_REGISTRY_IMAGE:latest
+    - docker push $CI_REGISTRY_IMAGE:latest
+
+push tag:
+  stage: build
+  needs:
+    - build
+  only:
+    - tags
+  script:
+    - docker pull $CI_REGISTRY_IMAGE:$CI_COMMIT_SHA
+    - docker tag $CI_REGISTRY_IMAGE:$CI_COMMIT_SHA $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG
+    - docker push $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG
 
 # Use container image to build firmware
 # Keep firmware as artifact
