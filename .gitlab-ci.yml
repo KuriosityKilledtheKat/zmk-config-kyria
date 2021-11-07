@@ -18,6 +18,10 @@ build:
   script:
     - docker info
     - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" $CI_REGISTRY
+    - docker pull $IMAGE || true
+    - docker pull $CI_REGISTRY_IMAGE/$CI_COMMIT_REF_SLUG || true
+    - docker pull $CI_REGISTRY_IMAGE/main || true
+    - docker pull $CI_REGISTRY_IMAGE || true
     - docker build -t $IMAGE .
     - docker push $IMAGE
 
