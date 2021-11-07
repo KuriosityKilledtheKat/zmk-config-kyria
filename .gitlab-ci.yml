@@ -29,7 +29,10 @@ build:
     - docker push $IMAGE
 
 push latest:
+  image: docker:latest
   stage: build
+  services:
+    - docker:dind
   needs:
     - build
   only:
@@ -40,7 +43,10 @@ push latest:
     - docker push $CI_REGISTRY_IMAGE:latest
 
 push tag:
+  image: docker:latest
   stage: build
+  services:
+    - docker:dind
   needs:
     - build
   only:
