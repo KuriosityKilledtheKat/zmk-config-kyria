@@ -1,13 +1,25 @@
 ---
 include:
   - template: 'Jobs/Code-Intelligence.gitlab-ci.yml'
+  - template: 'Security/Container-Scanning.gitlab-ci.yml'
   - template: 'Security/Dependency-Scanning.gitlab-ci.yml'
   - template: 'Security/License-Scanning.gitlab-ci.yml'
   - template: 'Security/SAST.gitlab-ci.yml'
   - template: 'Security/Secret-Detection.gitlab-ci.yml'
   - template: 'Workflows/MergeRequest-Pipelines.gitlab-ci.yml'
 
-# Build container image
-# Scan container image
+build:
+  image: docker:latest
+  stage: build
+  services:
+    - docker:dind
+  variables:
+    IMAGE: $CI_REGISTRY_IMAGE/$CI_COMMIT_REF_SLUG:$CI_COMMIT_SHA
+  script:
+    - docker info
+    - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" $CI_REGISTRY
+    - docker build -t $IMAGE .
+    - docker push $IMAGE
+
 # Use container image to build firmware
 # Keep firmware as artifact
