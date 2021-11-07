@@ -21,5 +21,10 @@ build:
     - docker build -t $IMAGE .
     - docker push $IMAGE
 
+container_scanning:
+  variables:
+    GIT_STRATEGY: fetch
+    DOCKERFILE_PATH: ./Dockerfile
+
 # Use container image to build firmware
 # Keep firmware as artifact
