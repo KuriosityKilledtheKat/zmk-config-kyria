@@ -1,6 +1,9 @@
-.github/workflows
+.DS_Store
+.dockerignore
+.git
+.github
 .gitlab-ci.yml
-config
 LICENSE
 README.md
 build.yaml
+config
