@@ -10,8 +10,9 @@ include:
 
 container_scanning:
   variables:
-    GIT_STRATEGY: fetch
     DOCKERFILE_PATH: Dockerfile
+    DOCKER_IMAGE: $CONTAINER_IMAGE
+    GIT_STRATEGY: fetch
 
 variables:
   ZMK_BUILD_IMAGE: $CI_REGISTRY_IMAGE/zmk-build-arm
