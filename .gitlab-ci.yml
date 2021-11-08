@@ -36,8 +36,8 @@ push image cache:
     - docker:dind
   needs:
     - build image
-  only:
-    - main
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
   variables:
     DOCKER_IMAGE_TAG: $CI_REGISTRY_IMAGE:cache
   script:
