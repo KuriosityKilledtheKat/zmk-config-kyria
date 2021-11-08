@@ -14,7 +14,8 @@ container_scanning:
     DOCKERFILE_PATH: ./Dockerfile
 
 variables:
-  DOCKER_IMAGE: $CI_REGISTRY_IMAGE/$CI_COMMIT_REF_SLUG:$CI_COMMIT_SHA
+  ZMK_BUILD_IMAGE: $CI_REGISTRY_IMAGE/zmk-build-arm
+  DOCKER_IMAGE: $ZMK_BUILD_IMAGE/$CI_COMMIT_REF_SLUG:$CI_COMMIT_SHA
 
 build image:
   image: docker:latest
@@ -25,7 +26,7 @@ build image:
     - docker info
     - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" $CI_REGISTRY
     - docker pull $DOCKER_IMAGE || true
-    - docker pull $CI_REGISTRY_IMAGE:cache || true
+    - docker pull $ZMK_BUILD_IMAGE:cache || true
     - docker build -t $DOCKER_IMAGE .
     - docker push $DOCKER_IMAGE
 
@@ -39,7 +40,7 @@ push image cache:
   rules:
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
   variables:
-    DOCKER_IMAGE_TAG: $CI_REGISTRY_IMAGE:cache
+    DOCKER_IMAGE_TAG: $ZMK_BUILD_IMAGE:cache
   script:
     - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" $CI_REGISTRY
     - docker pull $DOCKER_IMAGE
@@ -56,7 +57,7 @@ push tag:
   only:
     - tags
   variables:
-    DOCKER_IMAGE_TAG: $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG
+    DOCKER_IMAGE_TAG: $ZMK_BUILD_IMAGE:$CI_COMMIT_REF_SLUG
   script:
     - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" $CI_REGISTRY
     - docker pull $DOCKER_IMAGE
