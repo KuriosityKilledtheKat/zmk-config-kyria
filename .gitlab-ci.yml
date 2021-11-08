@@ -13,20 +13,21 @@ container_scanning:
     GIT_STRATEGY: fetch
     DOCKERFILE_PATH: ./Dockerfile
 
+variables:
+  DOCKER_IMAGE: $CI_REGISTRY_IMAGE/$CI_COMMIT_REF_SLUG:$CI_COMMIT_SHA
+
 build:
   image: docker:latest
   stage: build
   services:
     - docker:dind
-  variables:
-    IMAGE: $CI_REGISTRY_IMAGE/$CI_COMMIT_REF_SLUG:$CI_COMMIT_SHA
   script:
     - docker info
     - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" $CI_REGISTRY
-    - docker pull $IMAGE || true
+    - docker pull $DOCKER_IMAGE || true
     - docker pull $CI_REGISTRY_IMAGE:latest || true
-    - docker build -t $IMAGE .
-    - docker push $IMAGE
+    - docker build -t $DOCKER_IMAGE .
+    - docker push $DOCKER_IMAGE
 
 push latest:
   image: docker:latest
@@ -37,10 +38,12 @@ push latest:
     - build
   only:
     - main
+  variables:
+    DOCKER_IMAGE_TAG: $CI_REGISTRY_IMAGE:latest
   script:
-    - docker pull $CI_REGISTRY_IMAGE:$CI_COMMIT_SHA
-    - docker tag $CI_REGISTRY_IMAGE:$CI_COMMIT_SHA $CI_REGISTRY_IMAGE:latest
-    - docker push $CI_REGISTRY_IMAGE:latest
+    - docker pull $DOCKER_IMAGE
+    - docker tag $DOCKER_IMAGE $DOCKER_IMAGE_TAG
+    - docker push $DOCKER_IMAGE_TAG
 
 push tag:
   image: docker:latest
@@ -51,10 +54,12 @@ push tag:
     - build
   only:
     - tags
+  variables:
+    DOCKER_IMAGE_TAG: $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG
   script:
-    - docker pull $CI_REGISTRY_IMAGE:$CI_COMMIT_SHA
-    - docker tag $CI_REGISTRY_IMAGE:$CI_COMMIT_SHA $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG
-    - docker push $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG
+    - docker pull $DOCKER_IMAGE
+    - docker tag $DOCKER_IMAGE $DOCKER_IMAGE_TAG
+    - docker push $DOCKER_IMAGE_TAG
 
 # Use container image to build firmware
 # Keep firmware as artifact
