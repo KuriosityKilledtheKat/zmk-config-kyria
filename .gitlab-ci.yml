@@ -28,5 +28,40 @@ build_image:
     - echo "{\"auths\":{\"${CI_REGISTRY}\":{\"auth\":\"$(printf "%s:%s" "${CI_REGISTRY_USER}" "${CI_REGISTRY_PASSWORD}" | base64 | tr -d '\n')\"}}}" > /kaniko/.docker/config.json
     - /kaniko/executor --cache --context "${CI_PROJECT_DIR}" --dockerfile "${CI_PROJECT_DIR}/Dockerfile" --destination "${CONTAINER_IMAGE}"
 
-# Use container image to build firmware
-# Keep firmware as artifact
+firmware:
+  image: $CONTAINER_IMAGE
+  stage: build
+  needs: [build_image]
+  cache:
+    key: firmware
+    paths:
+      - .west/
+      - bootloader/
+      - CMakeFiles/
+      - modules/
+      - tools/
+      - zephyr/
+      - zmk/
+  artifacts:
+    paths:
+      - artifacts/
+  script:
+    - echo -e "\e[0Ksection_start:$(date +%s):init\r\e[0KInitializing west and zephyr"
+    - west init -l config || true
+    - west update
+    - west zephyr-export
+    - echo -e "\e[0Ksection_end:$(date +%s):init\r\e[0K"
+    - |
+      BUILDS="nice_nano_v2:kyria_left nice_nano_v2:kyria_right"
+      for BUILD in ${BUILDS} ; do
+        BOARD="${BUILD%:*}"
+        SHIELD="${BUILD#*:}"
+        echo -e "\e[0Ksection_start:$(date +%s):firmware-${SHIELD}-${BOARD}\r\e[0KBuilding firmware ${SHIELD} ${BOARD}"
+        west build -s zmk/app -b "${BOARD}" -- -DZMK_CONFIG="${CI_PROJECT_DIR}/config" -DSHIELD="${SHIELD}"
+        mkdir -p artifacts
+        cp -vf "build/zephyr/${BOARD}.dts.pre.tmp" "artifacts/${SHIELD}-${BOARD}-zephyr.dts.pre.tmp" 2>/dev/null || true
+        cp -vf "build/zephyr/zephyr.dts"           "artifacts/${SHIELD}-${BOARD}-zephyr.dts"         2>/dev/null || true
+        cp -vf "build/zephyr/zmk.uf2"              "artifacts/${SHIELD}-${BOARD}-zmk.uf2"            2>/dev/null || true
+        cp -vf "build/zephyr/zmk.hex"              "artifacts/${SHIELD}-${BOARD}-zmk.hex"            2>/dev/null || true
+        echo -e "\e[0Ksection_end:$(date +%s):firmware-${SHIELD}-${BOARD}\r\e[0K"
+      done
